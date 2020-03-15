@@ -6,7 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.w3c.dom.Text;
@@ -40,26 +40,24 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
             int position = getAdapterPosition();
             Log.d("MyAdapter.java", "onClick: position is " + position);
 
-            myLaunchListener.launchActivity(position);
+            myLaunchListener.launch(position);
 
         }
 
     }
-
 
     public MyAdapter(ArrayList<Coin> myDataset, LaunchListener myLaunchListener) {
         // using a Coin arraylist as the dataset
         mDataset = myDataset;
 
         this.mLaunchListener = myLaunchListener;
-
     }
 
     // Create new views (invoked by the layout manager)
     @Override
     public MyAdapter.MyViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         // create a new view (didn't use card views; couldnt figure that out)
-        ConstraintLayout v = (ConstraintLayout) LayoutInflater.from(parent.getContext())
+        CardView v = (CardView) LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.listitem_view, parent, false);
 
         MyViewHolder vh = new MyViewHolder(v, mLaunchListener);
@@ -76,7 +74,7 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
     }
 
     public interface LaunchListener{
-        void launchActivity(int position);
+        void launch(int position);
     }
 
     // Return the size of your dataset (invoked by the layout manager)

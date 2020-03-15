@@ -1,6 +1,7 @@
 package com.z5214480_infs3634.cryptopbag;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.FragmentTransaction;
 
 import android.content.Intent;
 import android.net.Uri;
@@ -14,33 +15,28 @@ public class DetailActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        //set empty layout to house fragment...
         setContentView(R.layout.detail_activity);
 
+        //bind fragment to layout
+        DetailFragment fragment = new DetailFragment();
+
+        FragmentTransaction initTransaction = getSupportFragmentManager().beginTransaction();
+        initTransaction.add(R.id.fragment_container, fragment);
+        initTransaction.commit();
+
+        //get intent from MainActivity
         Intent intent = getIntent();
         String message = intent.getStringExtra(MainActivity.KEY);
+        //then pass it to fragment as a bundle
+        Bundle intentBundle = new Bundle();
+        intentBundle.putString(MainActivity.KEY,message);
+        fragment.setArguments(intentBundle);
 
-        TextView value_text = findViewById(R.id.value_text);
-        TextView change1H_text = findViewById(R.id.change1H_text);
-        TextView change24H_text = findViewById(R.id.change24H_text);
-        TextView change7D_text = findViewById(R.id.change7D_text);
-        TextView marketcap_text = findViewById(R.id.marketcap_text);
-        TextView volume24H_text = findViewById(R.id.volume24H_text);
+        //? Note: I tried to use parent.getIntent() in DetailFragment.onActivityCreated()
+        //  why didn't this work ?
 
-        TextView name_text = findViewById(R.id.name_text);
-        TextView symbol_text = findViewById(R.id.symbol_text);
-
-        Coin myCoin = new Coin();
-        myCoin = myCoin.coinSearch(message);
-
-        name_text.setText(myCoin.getName());
-        symbol_text.setText(myCoin.getSymbol());
-
-        value_text.setText(Double.toString(myCoin.getValue()));
-        change1H_text.setText(Double.toString(myCoin.getChange1h()));
-        change24H_text.setText(Double.toString(myCoin.getChange24h()));
-        change7D_text.setText(Double.toString(myCoin.getChange7d()));
-        marketcap_text.setText(Double.toString(myCoin.getMarketcap()));
-        volume24H_text.setText(Double.toString(myCoin.getVolume()));
 
     }
 
