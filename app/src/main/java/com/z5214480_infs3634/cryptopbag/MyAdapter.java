@@ -17,7 +17,7 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
     private ArrayList<Coin> mDataset;
     private LaunchListener mLaunchListener;
 
-    public static class MyViewHolder extends RecyclerView.ViewHolder implements  View.OnClickListener{
+    public static class MyViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
         public TextView nameText;
         public TextView costText;
         public TextView percentText;
