@@ -1,7 +1,6 @@
 package com.z5214480_infs3634.cryptopbag;
 
 import android.app.Activity;
-import android.content.Intent;
 import android.os.Bundle;
 
 import androidx.annotation.Nullable;
@@ -11,6 +10,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+
+import com.z5214480_infs3634.cryptopbag.entities.Coin;
 
 
 /**
@@ -29,7 +30,7 @@ public class DetailFragment extends Fragment {
         super.onActivityCreated(savedInstanceState);
 
         //retrieve bundle
-        String message = getArguments().getString(MainActivity.KEY);
+        int message = getArguments().getInt(MainActivity.KEY);
 
         //find views from the layout
         // note: getView() is required since findViewById() is not natively compatible w fragments
@@ -43,18 +44,17 @@ public class DetailFragment extends Fragment {
         TextView name_text = getView().findViewById(R.id.name_text);
         TextView symbol_text = getView().findViewById(R.id.symbol_text);
 
-        Coin myCoin = new Coin();
-        myCoin = myCoin.coinSearch(message);
+        Coin myCoin = MainActivity.coinSearch(message);
 
         name_text.setText(myCoin.getName());
         symbol_text.setText(myCoin.getSymbol());
 
-        value_text.setText(Double.toString(myCoin.getValue()));
-        change1H_text.setText(Double.toString(myCoin.getChange1h()));
-        change24H_text.setText(Double.toString(myCoin.getChange24h()));
-        change7D_text.setText(Double.toString(myCoin.getChange7d()));
-        marketcap_text.setText(Double.toString(myCoin.getMarketcap()));
-        volume24H_text.setText(Double.toString(myCoin.getVolume()));
+        value_text.setText(myCoin.getPriceUsd());
+        change1H_text.setText(myCoin.getPercentChange1h());
+        change24H_text.setText(myCoin.getPercentChange24h());
+        change7D_text.setText(myCoin.getPercentChange7d());
+        marketcap_text.setText(myCoin.getMarketCapUsd());
+        volume24H_text.setText(Double.toString(myCoin.getVolume24()));
     }
 
     @Override

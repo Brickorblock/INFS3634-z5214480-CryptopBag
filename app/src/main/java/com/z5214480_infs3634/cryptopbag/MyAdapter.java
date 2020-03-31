@@ -9,12 +9,12 @@ import android.widget.TextView;
 import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.w3c.dom.Text;
+import com.z5214480_infs3634.cryptopbag.entities.Coin;
 
-import java.util.ArrayList;
+import java.util.List;
 
 public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
-    private ArrayList<Coin> mDataset;
+    private List<Coin> mDataset;
     private LaunchListener mLaunchListener;
 
     public static class MyViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
@@ -46,8 +46,8 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
 
     }
 
-    public MyAdapter(ArrayList<Coin> myDataset, LaunchListener myLaunchListener) {
-        // using a Coin arraylist as the dataset
+    public MyAdapter(List<Coin> myDataset, LaunchListener myLaunchListener) {
+        // using a Coin list as the dataset
         mDataset = myDataset;
 
         this.mLaunchListener = myLaunchListener;
@@ -56,7 +56,6 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
     // Create new views (invoked by the layout manager)
     @Override
     public MyAdapter.MyViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        // create a new view (didn't use card views; couldnt figure that out)
         CardView v = (CardView) LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.listitem_view, parent, false);
 
@@ -68,8 +67,8 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
     public void onBindViewHolder(MyViewHolder holder, int position) {
         // getting data from each coin in mDataset
         holder.nameText.setText(mDataset.get(position).getName());
-        holder.costText.setText(Double.toString(mDataset.get(position).getValue()));
-        holder.percentText.setText(Double.toString(mDataset.get(position).getChange1h()));
+        holder.costText.setText(mDataset.get(position).getPriceUsd());
+        holder.percentText.setText(mDataset.get(position).getPercentChange1h());
 
     }
 
