@@ -1,7 +1,6 @@
 package com.z5214480_infs3634.cryptopbag;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -10,13 +9,20 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.z5214480_infs3634.cryptopbag.entities.Coin;
 import com.z5214480_infs3634.cryptopbag.entities.CoinLoreResponse;
+import com.z5214480_infs3634.cryptopbag.entities.CoinService;
 
-import java.util.ArrayList;
 import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity implements MyAdapter.LaunchListener {
     public static final String KEY = "ActivityMain";
@@ -40,15 +46,39 @@ public class MainActivity extends AppCompatActivity implements MyAdapter.LaunchL
         layoutManager = new LinearLayoutManager(this);
         myRecyclerView.setLayoutManager(layoutManager);
 
+        // prepare Retrofit
+        Retrofit.Builder builder = new Retrofit.Builder()
+                .baseUrl("https://api.coinlore.net/api/")
+                .addConverterFactory(GsonConverterFactory.create());
 
-        // call CoinLore API for dataset of coins
-        CoinLoreResponse coinLoreList = new Gson().fromJson(CoinLoreResponse.queryResult, CoinLoreResponse.class);
-        List<Coin> myCoins = coinLoreList.getData();
-        this.coinList = myCoins;
+        Retrofit retrofit = builder.build();
+
+        CoinService service = retrofit.create(CoinService.class);
+        Call<CoinLoreResponse> call = service.get100Coins();
 
         // create an adapter
-        mAdapter = new MyAdapter(myCoins, this);
+        mAdapter = new MyAdapter(coinList, this);
         myRecyclerView.setAdapter(mAdapter);
+
+        //execute call asynchronously using enqueue
+
+        call.enqueue(new Callback<CoinLoreResponse>() {
+            @Override
+            public void onResponse(Call<CoinLoreResponse> call, Response<CoinLoreResponse> response) {
+                // create CoinLoreResponse to capture api call response
+                CoinLoreResponse coinResponse = response.body();
+
+                List<Coin> myCoins = coinResponse.getData();
+                setCoins(myCoins);
+            }
+
+            @Override
+            public void onFailure(Call<CoinLoreResponse> call, Throwable t) {
+                //shows a toast message of failure
+                String failMsg = "Could not connect to CoinLore API";
+                Toast.makeText(MainActivity.this, failMsg, Toast.LENGTH_SHORT).show();
+            }
+        });
 
         Log.d("MainActivity.java", "onCreate: onCreate successful");
 
@@ -115,4 +145,12 @@ public class MainActivity extends AppCompatActivity implements MyAdapter.LaunchL
         return targetCoin;
     }
 
+    public void setCoins(List<Coin> newCoins){
+        coinList = newCoins;
+        mAdapter = new MyAdapter(newCoins, this);
+        myRecyclerView.setAdapter(mAdapter);
+
+        String msg = "Coin list successfully updated.";
+        Toast.makeText(MainActivity.this, msg, Toast.LENGTH_SHORT).show();
+    }
 }
