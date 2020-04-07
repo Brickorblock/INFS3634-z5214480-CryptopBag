@@ -146,11 +146,17 @@ public class MainActivity extends AppCompatActivity implements MyAdapter.LaunchL
     }
 
     public void setCoins(List<Coin> newCoins){
+        //show the loading text
+        findViewById(R.id.fetchingText).setVisibility(View.VISIBLE);
+
         coinList = newCoins;
         mAdapter = new MyAdapter(newCoins, this);
         myRecyclerView.setAdapter(mAdapter);
 
         String msg = "Coin list successfully updated.";
         Toast.makeText(MainActivity.this, msg, Toast.LENGTH_SHORT).show();
+
+        //remove the loading text
+        findViewById(R.id.fetchingText).setVisibility(View.INVISIBLE);
     }
 }
