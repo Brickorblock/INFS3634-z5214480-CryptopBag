@@ -6,6 +6,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -16,6 +17,7 @@ import com.z5214480_infs3634.cryptopbag.entities.Coin;
 import com.z5214480_infs3634.cryptopbag.entities.CoinLoreResponse;
 import com.z5214480_infs3634.cryptopbag.entities.CoinService;
 
+import java.io.IOException;
 import java.util.List;
 
 import retrofit2.Call;
@@ -46,39 +48,37 @@ public class MainActivity extends AppCompatActivity implements MyAdapter.LaunchL
         layoutManager = new LinearLayoutManager(this);
         myRecyclerView.setLayoutManager(layoutManager);
 
-        // prepare Retrofit
-        Retrofit.Builder builder = new Retrofit.Builder()
-                .baseUrl("https://api.coinlore.net/api/")
-                .addConverterFactory(GsonConverterFactory.create());
-
-        Retrofit retrofit = builder.build();
-
-        CoinService service = retrofit.create(CoinService.class);
-        Call<CoinLoreResponse> call = service.get100Coins();
-
-        // create an adapter
-        mAdapter = new MyAdapter(coinList, this);
-        myRecyclerView.setAdapter(mAdapter);
+//        // prepare Retrofit
+//        Retrofit.Builder builder = new Retrofit.Builder()
+//                .baseUrl("https://api.coinlore.net/api/")
+//                .addConverterFactory(GsonConverterFactory.create());
+//
+//        Retrofit retrofit = builder.build();
+//
+//        CoinService service = retrofit.create(CoinService.class);
+//        Call<CoinLoreResponse> call = service.get100Coins();
 
         //execute call asynchronously using enqueue
 
-        call.enqueue(new Callback<CoinLoreResponse>() {
-            @Override
-            public void onResponse(Call<CoinLoreResponse> call, Response<CoinLoreResponse> response) {
-                // create CoinLoreResponse to capture api call response
-                CoinLoreResponse coinResponse = response.body();
+//        call.enqueue(new Callback<CoinLoreResponse>() {
+//            @Override
+//            public void onResponse(Call<CoinLoreResponse> call, Response<CoinLoreResponse> response) {
+//                // create CoinLoreResponse to capture api call response
+//                CoinLoreResponse coinResponse = response.body();
+//
+//                List<Coin> myCoins = coinResponse.getData();
+//                setCoins(myCoins);
+//            }
+//
+//            @Override
+//            public void onFailure(Call<CoinLoreResponse> call, Throwable t) {
+//                //shows a toast message of failure
+//                String failMsg = "Could not connect to CoinLore API";
+//                Toast.makeText(MainActivity.this, failMsg, Toast.LENGTH_SHORT).show();
+//            }
+//        });
 
-                List<Coin> myCoins = coinResponse.getData();
-                setCoins(myCoins);
-            }
-
-            @Override
-            public void onFailure(Call<CoinLoreResponse> call, Throwable t) {
-                //shows a toast message of failure
-                String failMsg = "Could not connect to CoinLore API";
-                Toast.makeText(MainActivity.this, failMsg, Toast.LENGTH_SHORT).show();
-            }
-        });
+        new NetworkTask().execute();
 
         Log.d("MainActivity.java", "onCreate: onCreate successful");
 
@@ -88,6 +88,54 @@ public class MainActivity extends AppCompatActivity implements MyAdapter.LaunchL
             mIsDualPane = true;
         }
         Log.d("MainActivity", "onCreate: mIsDualPane = " + mIsDualPane);
+    }
+
+
+
+    public class NetworkTask extends AsyncTask<Void, Integer, CoinLoreResponse>{
+
+        @Override
+        protected CoinLoreResponse doInBackground(Void... voids) {
+            Log.d("TAG", "doInBackground: NetworkTask executing...");
+            // prepare Retrofit
+            Retrofit.Builder builder = new Retrofit.Builder()
+                    .baseUrl("https://api.coinlore.net/api/")
+                    .addConverterFactory(GsonConverterFactory.create());
+
+            Retrofit retrofit = builder.build();
+
+            CoinService service = retrofit.create(CoinService.class);
+            Call<CoinLoreResponse> call = service.get100Coins();
+
+            CoinLoreResponse coinLoreList = null;
+
+            try {
+                Response<CoinLoreResponse> coinResponse = call.execute();
+                coinLoreList = coinResponse.body();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            return coinLoreList;
+        }
+
+        @Override
+        protected void onPostExecute(CoinLoreResponse coinLoreResponse) {
+            super.onPostExecute(coinLoreResponse);
+
+            if (coinLoreResponse != null) {
+                findViewById(R.id.errorConstraint).setVisibility(View.INVISIBLE);
+                setCoins(coinLoreResponse.getData());
+                Log.d("TAG", "onPostExecute: Execution Sucessful, setCoins called");
+            } else {
+                //shows an error on the UI if failed to get a response
+                findViewById(R.id.errorConstraint).setVisibility(View.VISIBLE);
+                findViewById(R.id.fetchingText).setVisibility(View.INVISIBLE);
+                String msg = "Failed to retrieve coins from API";
+                Toast.makeText(MainActivity.this, msg, Toast.LENGTH_SHORT).show();
+            }
+
+        }
     }
 
     public void launch(int position){
@@ -145,6 +193,8 @@ public class MainActivity extends AppCompatActivity implements MyAdapter.LaunchL
         return targetCoin;
     }
 
+    //sets the adapter using a dataset of List<Coin> and rebuilds the recycler view to show this
+    // data set
     public void setCoins(List<Coin> newCoins){
         //show the loading text
         findViewById(R.id.fetchingText).setVisibility(View.VISIBLE);
