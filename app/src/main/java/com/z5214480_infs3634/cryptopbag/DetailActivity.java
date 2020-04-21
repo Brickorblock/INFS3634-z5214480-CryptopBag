@@ -32,7 +32,7 @@ public class DetailActivity extends AppCompatActivity {
 
         //then pass it to fragment as a bundle
         Bundle intentBundle = new Bundle();
-        intentBundle.putInt(MainActivity.KEY,message);
+        intentBundle.putString(MainActivity.KEY,message);
         fragment.setArguments(intentBundle);
 
         //? Note: I tried to use parent.getIntent() in DetailFragment.onActivityCreated()

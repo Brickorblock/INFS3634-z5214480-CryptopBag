@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.room.Room;
 
 import android.content.Intent;
 import android.os.AsyncTask;
@@ -14,10 +15,12 @@ import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.z5214480_infs3634.cryptopbag.entities.Coin;
+import com.z5214480_infs3634.cryptopbag.entities.CoinDatabase;
 import com.z5214480_infs3634.cryptopbag.entities.CoinLoreResponse;
 import com.z5214480_infs3634.cryptopbag.entities.CoinService;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import retrofit2.Call;
@@ -35,6 +38,9 @@ public class MainActivity extends AppCompatActivity implements MyAdapter.LaunchL
     private RecyclerView.Adapter mAdapter;
     private RecyclerView.LayoutManager layoutManager;
 
+    public static CoinDatabase coinDb;
+    private List<Coin> currCoins = new ArrayList<>();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.d("MainActivity.java", "onCreate: hello world");
@@ -48,8 +54,6 @@ public class MainActivity extends AppCompatActivity implements MyAdapter.LaunchL
         layoutManager = new LinearLayoutManager(this);
         myRecyclerView.setLayoutManager(layoutManager);
 
-        new NetworkTask().execute();
-
         Log.d("MainActivity.java", "onCreate: onCreate successful");
 
         //check if dual pane mode (tablet view)
@@ -58,14 +62,24 @@ public class MainActivity extends AppCompatActivity implements MyAdapter.LaunchL
             mIsDualPane = true;
         }
         Log.d("MainActivity", "onCreate: mIsDualPane = " + mIsDualPane);
+
+        //build db
+        coinDb = Room.databaseBuilder(getApplicationContext(), CoinDatabase.class, "coinDb")
+                .build();
+
+        new NetworkTask().execute();
+        new UpdateAdapterTask().execute();
     }
 
-
-    public class NetworkTask extends AsyncTask<Void, Integer, CoinLoreResponse>{
+    //removes existing rows in CoinDatabase, calls API then fills CoinDatabase with response data
+    public class NetworkTask extends AsyncTask<Void, Void, CoinLoreResponse>{
 
         @Override
         protected CoinLoreResponse doInBackground(Void... voids) {
             Log.d("TAG", "doInBackground: NetworkTask executing...");
+            // drop all existing tables
+            coinDb.coinDao().deleteAllCoins();
+
             // prepare Retrofit
             Retrofit.Builder builder = new Retrofit.Builder()
                     .baseUrl("https://api.coinlore.net/api/")
@@ -73,6 +87,7 @@ public class MainActivity extends AppCompatActivity implements MyAdapter.LaunchL
 
             Retrofit retrofit = builder.build();
 
+            //execute API call
             CoinService service = retrofit.create(CoinService.class);
             Call<CoinLoreResponse> call = service.get100Coins();
 
@@ -85,17 +100,23 @@ public class MainActivity extends AppCompatActivity implements MyAdapter.LaunchL
                 e.printStackTrace();
             }
 
+            // fill db with response data
+            Coin[] coinArray = coinLoreList.getData().
+                    toArray(new Coin[coinLoreList.getData().size()]);
+
+            coinDb.coinDao().insertCoins(coinArray);
+
             return coinLoreList;
         }
 
         @Override
         protected void onPostExecute(CoinLoreResponse coinLoreResponse) {
+            // simply show a toast & error UI if something went wrong during API call
             super.onPostExecute(coinLoreResponse);
 
             if (coinLoreResponse != null) {
                 findViewById(R.id.errorConstraint).setVisibility(View.INVISIBLE);
-                setCoins(coinLoreResponse.getData());
-                Log.d("TAG", "onPostExecute: Execution Sucessful, setCoins called");
+                Log.d("TAG", "onPostExecute: API Call successful");
             } else {
                 //shows an error on the UI if failed to get a response
                 findViewById(R.id.errorConstraint).setVisibility(View.VISIBLE);
@@ -107,27 +128,64 @@ public class MainActivity extends AppCompatActivity implements MyAdapter.LaunchL
         }
     }
 
+    public class UpdateAdapterTask extends AsyncTask<Void, Void, List<Coin>>{
+        @Override
+        protected List<Coin> doInBackground(Void... voids) {
+            //query DB for all coins
+            List<Coin> allCoins = coinDb.coinDao().getCoins();
+            Log.d("TAG", "doInBackground: Coins retrieved");
+
+            currCoins = allCoins;
+
+            return allCoins;
+        }
+
+        @Override
+        protected void onPostExecute(List<Coin> coins) {
+            // shows error message on toast/UI if database retrieval failed
+            // updates coins adapter if succeeded
+            super.onPostExecute(coins);
+
+            if (coins != null) {
+                findViewById(R.id.errorConstraint).setVisibility(View.INVISIBLE);
+                setCoins(coins);
+                Log.d("TAG", "onPostExecute: Execution Sucessful, setCoins called");
+            } else {
+                //shows an error on the UI if failed to get a response
+                findViewById(R.id.errorConstraint).setVisibility(View.VISIBLE);
+                findViewById(R.id.fetchingText).setVisibility(View.INVISIBLE);
+                String msg = "Failed to retrieve coins from API";
+                Toast.makeText(MainActivity.this, msg, Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
     public void launch(int position){
         Log.d("MainActivity", "launchActivity: clicked");
 
+        //convert position to coin ID
+        String id = currCoins.get(position).getId();
+        Log.d("TAG", "launch: id = " + id);
+
+
         if (mIsDualPane == false){
-            launchActivity(position);
+            launchActivity(id);
         } else {
-            attachDetailFragment(position);
+            attachDetailFragment(id);
         }
     }
 
     // launches detail in a separate activity
-    public void launchActivity(int position){
+    public void launchActivity(String id){
         Intent intent = new Intent(this, DetailActivity.class);
 
-        intent.putExtra(KEY, position);
+        intent.putExtra(KEY, id);
         startActivity(intent);
         Log.d("MainActivity", "launchActivity: Activity started");
     }
 
     //binds detail fragment to dual pane layout
-    public void attachDetailFragment(int position){
+    public void attachDetailFragment(String id){
         //bind fragment to layout
         DetailFragment fragment = new DetailFragment();
 
@@ -143,7 +201,7 @@ public class MainActivity extends AppCompatActivity implements MyAdapter.LaunchL
 
         //send coin info to fragment as bundle
         Bundle intentBundle = new Bundle();
-        intentBundle.putInt(KEY, position);
+        intentBundle.putString(KEY, id);
         fragment.setArguments(intentBundle);
 
     }
